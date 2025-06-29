@@ -21,3 +21,13 @@ variable "admin_password" {
   type        = string
   sensitive   = true
 }
+variable "admin_username" {
+  type        = string
+  description = "Administrator username"
+}
+
+variable "admin_password" {
+  type        = string
+  description = "Administrator password"
+  sensitive   = true
+}
