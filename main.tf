@@ -67,5 +67,55 @@ resource "azurerm_lb_rule" "lbrule" {
   frontend_ip_configuration_name = "PublicIPAddress"
   probe_id                       = azurerm_lb_probe.probe.id
 }
+# 1. Resource Group
+resource "azurerm_resource_group" "rg" {
+  name     = var.resource_group_name
+  location = var.location
+}
 
-# 🧱 后续步骤我们将创建多个 VM、NIC、NSG 并连接 LB 后端池
+# 2. Virtual Network
+resource "azurerm_virtual_network" "vnet" {
+  name                = "lb-vnet"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+# 3. Subnet
+resource "azurerm_subnet" "subnet" {
+  name                 = "lb-subnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# 4. Public IP
+resource "azurerm_public_ip" "lb_public_ip" {
+  name                = "lb-public-ip"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
+# 5. Load Balancer
+resource "azurerm_lb" "lb" {
+  name                = "demo-lb"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "Standard"
+
+  frontend_ip_configuration {
+    name                 = "PublicIPAddress"
+    public_ip_address_id = azurerm_public_ip.lb_public_ip.id
+  }
+}
+
+# 6. Backend Address Pool
+resource "azurerm_lb_backend_address_pool" "lb_backend_pool" {
+  name                = "backend-pool"
+  resource_group_name = azurerm_resource_group.rg.name
+  loadbalancer_id     = azurerm_lb.lb.id
+}
+
+
